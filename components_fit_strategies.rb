@@ -20,25 +20,6 @@ class LeafComponent
   end
 end
 
-class BestFitStrategy
-  def self.select(components, number_of_items)
-    selected_component = nil
-    best_fit_difference = 1000000
-    components.each do |component|
-      fit_difference = component.free_space - number_of_items
-      selected_component = component if(fit_difference >= 0 && fit_difference < best_fit_difference)
-    end
-    return selected_component, selected_component.free_space
-  end
-end
-
-class FirstFitStrategy
-  def self.select(components, number_of_items) 
-    selected_component = components.find { |component| component.free_space != 0 }
-    return selected_component, selected_component.free_space
-  end
-end
-
 class Component
   [:occupied_space, :storage_capacity, :free_space].each do |message|
     define_method(message) do
@@ -58,6 +39,26 @@ class Component
       selected_component.write(chars.shift(number_of_items_to_write))
     end
     # Component.new(written_sub_components)
+  end
+end
+
+
+class BestFitStrategy
+  def self.select(components, number_of_items)
+    selected_component = nil
+    best_fit_difference = 1000000
+    components.each do |component|
+      fit_difference = component.free_space - number_of_items
+      selected_component = component if(fit_difference >= 0 && fit_difference < best_fit_difference)
+    end
+    return selected_component, selected_component.free_space
+  end
+end
+
+class FirstFitStrategy
+  def self.select(components, number_of_items) 
+    selected_component = components.find { |component| component.free_space != 0 }
+    return selected_component, selected_component.free_space
   end
 end
 
