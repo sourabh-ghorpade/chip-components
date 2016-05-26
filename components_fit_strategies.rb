@@ -18,9 +18,14 @@ class LeafComponent
     #TODO: Add guard clause or shift to better model ???
     @stored_chars += chars
   end
+
+  def leaf_node?
+    true
+  end
 end
 
 class Component
+  attr_reader :sub_components
   [:occupied_space, :storage_capacity, :free_space].each do |message|
     define_method(message) do
       @sub_components.inject(0) { |acc, component| acc + component.send(message) }
@@ -31,20 +36,30 @@ class Component
     @sub_components = sub_components
     @strategy = strategy
   end
-
-  def write(chars)
-    until chars.empty?
-      selected_component, number_of_items_to_write = @strategy.select(@sub_components, chars.size)
-      p selected_component.inspect + 'blah' + number_of_items_to_write.to_s
-      selected_component.write(chars.shift(number_of_items_to_write))
-    end
-    # Component.new(written_sub_components)
+  
+  def leaf_node?
+    false
   end
 end
 
+module ComponentsWriter
+  def write(chars, components)
+    until chars.empty?
+      selected_component, number_of_items_to_write = select(components, chars.size)
+      if selected_component.leaf_node?
+        selected_component.write(chars.shift(number_of_items_to_write))
+      else
+        self.write(chars.shift(number_of_items_to_write), selected_component.sub_components)
+      end
+    end
+  end  
+end
 
 class BestFitStrategy
-  def self.select(components, number_of_items)
+  include ComponentsWriter
+
+  private
+  def select(components, number_of_items)
     selected_component = nil
     best_fit_difference = 1000000
     components.each do |component|
@@ -56,14 +71,17 @@ class BestFitStrategy
 end
 
 class FirstFitStrategy
-  def self.select(components, number_of_items) 
+  include ComponentsWriter
+
+  private
+  def select(components, number_of_items) 
     selected_component = components.find { |component| component.free_space != 0 }
     return selected_component, selected_component.free_space
   end
 end
 
 
-[FirstFitStrategy, BestFitStrategy].each do |strategy|
+[FirstFitStrategy.new, BestFitStrategy.new].each do |strategy|
   p "**************** with #{strategy} ************ "
   t1, t2 = LeafComponent.new(1), LeafComponent.new(3)
   p t1
@@ -73,9 +91,9 @@ end
   p c1.occupied_space
   p c1.storage_capacity
   p "old components -> " + c1.inspect.to_s
-  c1.write(['a','b','c'])
+  strategy.write(['a','b','c'], [c1])
   p "new components -> " + c1.inspect.to_s
-  c1.write(['d'])
+  strategy.write(['d'], [c1])
   p "newer components -> " + c1.inspect.to_s
 end
 
